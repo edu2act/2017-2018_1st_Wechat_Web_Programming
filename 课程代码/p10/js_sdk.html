@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+    <!-- <link href="https://res.wx.qq.com/open/libs/weui/1.1.2/weui.min.css" rel="stylesheet" type="text/css"> -->
+    <link href="fdflex.css" rel="stylesheet" type="text/css">
+    <script src="brutal.js"></script>
+    <script src="http://res.wx.qq.com/open/js/jweixin-1.2.0.js"></script>
+    <title> JS-SDK Test</title>
+    <style>
+      .container{
+        width:100%;
+        overflow-x: hidden;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="row">
+        <div class="columns small-12">
+          <p id="start-info">
+            
+          </p>
+        </div>
+      </div>
+       <div class="row">
+        <div class="column small-6">
+          <p><button class="button small hollow" onclick="close_window()">关闭网页</button></p>
+          <p id="voice-record"><button class="button small hollow" onclick="start_voice_record()">开始录音</button></p>
+        </div>
+        <div class="column small-6">
+          <p><button class="button small hollow" onclick="pick_image()">选择图片</button></p>
+          <p><button class="button small hollow" onclick="get_my_location()">我的位置</button></p>
+        </div>
+      </div>
+      <div class="row">
+        <div class="columns small-12">
+          <p id="content-block">
+            
+          </p>
+        </div>
+      </div>
+    </div>
+    <script>
+      var signature = '<?php if(isset($_view['signature'])){echo $_view['signature'];} ?>';
+      var sign_str = '<?php if(isset($_view['sign_str'])){echo $_view['sign_str'];} ?>';
+      var config_info = {
+        debug:false,
+        appId:'wx01935b533f3c3a98',
+        timestamp:'<?php if(isset($_view['timestamp'])){echo $_view['timestamp'];} ?>',
+        nonceStr:'<?php if(isset($_view['noncestr'])){echo $_view['noncestr'];} ?>',
+        signature:'<?php if(isset($_view['signature'])){echo $_view['signature'];} ?>',
+        jsApiList:[
+          'onMenuShareTimeline',
+          'onMenuShareAppMessage',
+          'onMenuShareQQ',
+          'onMenuShareWeibo',
+          'onMenuShareQZone',
+          'chooseImage',
+          'previewImage',
+          'uploadImage',
+          'downloadImage',
+          'closeWindow',
+          'getLocation',
+          'openLocation',
+          'startRecord',
+          'stopRecord',
+          'playVoice',
+          'onVoiceRecordEnd',
+          'onVoicePlayEnd'
+        ]
+      };
+      
+      wx.config(config_info);
+      
+      wx.ready(function(){
+          setTimeout(function(){
+            var html = '<span>Ok to config JS-SDK. Please test it.</span>';
+            brutal.htmlId('start-info',html);
+          },100);
+          //分享给朋友
+          wx.onMenuShareAppMessage({
+              title:'分享接口测试',
+              desc:'分享给朋友的接口测试，本页面为测试信息',
+              link:'http://www.hzwjia.com/shop/weixin/hello.html',
+              type:'link',
+              dataUrl:'',
+              success:function(){
+                alert('分享成功');
+              },
+              cancel:function(){
+                alert('你取消了分享');
+              }
+          });
+          
+          //分享到朋友圈
+          wx.onMenuShareTimeline({
+              title: '分享朋友圈测试接口', // 分享标题
+              link: 'http://www.hzwjia.com/shop/weixin/hello.html', 
+              imgUrl: '', // 分享图标
+              success: function () { 
+                  alert('already share');
+              },
+              cancel: function () { 
+                  alert('cancel it');
+              }
+          });
+          wx.onVoiceRecordEnd({
+              // 录音时间超过一分钟没有停止的时候会执行 complete 回调
+              complete: function (res) {
+                  wx.playVoice({localId:res.localId}); 
+              }
+          });
+          wx.onVoicePlayEnd({
+              success: function (res) {
+                  brutal.htmlId("voice-record",
+                      '<button class="button hollow small" onclick="start_voice_record()">'+
+                      '开始录音'+
+                      '</button>'
+                  );
+              }
+          });
+      });
+      
+      wx.error(function(res){
+        alert(res.errMsg);
+      });
+      
+      function pick_image(){
+        wx.chooseImage({
+          count: 2, // 默认9
+          sizeType: ['original'], // 可以指定是原图还是压缩图，默认二者都有
+          sourceType: ['album', 'camera'], // 可以指定来源是相册还是相机，默认二者都有
+          success: function (res) {
+            var localIds = res.localIds; // 返回选定照片的本地ID列表，localId可以作为img标签的src属性显示图片
+            for(var i=0;i<localIds.length;i++){
+              upload_image(localIds[i]);
+            }
+          }
+        });
+      }
+
+      function upload_image(localId){
+        wx.uploadImage({
+            localId: localId, // 需要上传的图片的本地ID，由chooseImage接口获得
+            isShowProgressTips: 1, // 默认为1，显示进度提示
+            success: function (res) {
+                var serverId = res.serverId; // 返回图片的服务器端ID
+                alert(serverId);
+            }
+        });
+      }
+      
+      function close_window(){
+        wx.closeWindow();
+      }
+
+      function get_my_location(){
+        wx.getLocation({
+            // 默认为wgs84的gps坐标，如果要返回直接给openLocation用的火星坐标，可传入'gcj02'
+            type: 'wgs84', 
+            success: function (res) {
+                alert(JSON.stringify(res));
+                var html = '纬度：' + res.latitude + '<br>';
+                html += '经度：' + res.longitude + '<br>';
+                html += '速度：' + res.speed + '<br>';
+                html += '位置精度：' + res.accuracy + '<br>';
+
+                brutal.htmlId("content-block",html);
+            }
+        });
+      }
+
+      function start_voice_record(){
+        brutal.htmlId("voice-record",'<button class="button hollow alert small" onclick="stop_voice_record()">停止录音</button>');
+        wx.startRecord();
+      }
+
+      function stop_voice_record(){
+
+        wx.stopRecord({
+            success: function (res) {
+              brutal.htmlId("voice-record",'播放录音···');
+              wx.playVoice({localId:res.localId});
+            }
+        });
+      }
+      
+      window.onpageshow = function(){
+        setInterval(function(){
+          
+        },7000);
+      }
+    </script>
+  </body>
+</html>
